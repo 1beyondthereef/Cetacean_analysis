@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BVI Cetacean Research — Interactive Maps</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&family=Source+Sans+3:wght@300;400;500;600&display=swap');
+:root{--o9:#0C2D48;--o7:#1B4F72;--o5:#2E86C1;--o2:#AED6F1;--o0:#EBF5FB;--coral:#E74C3C;--text:#2c3e50;--bg:#f7f9fb}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans 3',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+.hero{background:linear-gradient(135deg,var(--o9),var(--o7),#1a6fa0);color:white;padding:3rem 2rem;text-align:center;position:relative;overflow:hidden}
+.hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--o5),var(--coral),var(--o5))}
+.hero h1{font-family:'Source Serif 4',Georgia,serif;font-size:2rem;font-weight:700;letter-spacing:-0.02em;margin-bottom:0.3rem}
+.hero p{font-size:1rem;opacity:0.85;font-weight:300;max-width:700px;margin:0 auto}
+.container{max-width:900px;margin:0 auto;padding:2rem}
+.card{background:white;border:1px solid #e8edf2;border-radius:10px;padding:1.5rem;margin-bottom:1.25rem;box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:box-shadow 0.2s,transform 0.2s;display:block;text-decoration:none;color:var(--text)}
+.card:hover{box-shadow:0 4px 20px rgba(0,0,0,0.1);transform:translateY(-2px)}
+.card-label{font-size:0.7rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--o5);font-weight:600;margin-bottom:0.3rem}
+.card h2{font-family:'Source Serif 4',serif;font-size:1.2rem;font-weight:600;color:var(--o7);margin-bottom:0.3rem}
+.card p{font-size:0.88rem;color:#7f8c8d;line-height:1.5}
+.badge{display:inline-block;font-size:0.68rem;padding:0.15rem 0.5rem;border-radius:10px;font-weight:600;margin-right:0.3rem}
+.badge-interactive{background:var(--o0);color:var(--o7)}
+.badge-ocean{background:#E8F8F5;color:#1ABC9C}
+.section-label{font-size:0.8rem;text-transform:uppercase;letter-spacing:0.08em;color:#95a5a6;font-weight:600;margin:2rem 0 0.75rem;padding-bottom:0.4rem;border-bottom:1px solid #e8edf2}
+.footer{text-align:center;padding:2rem;font-size:0.8rem;color:#95a5a6;border-top:1px solid #e8edf2;margin-top:2rem}
+.stats{display:flex;justify-content:center;gap:2rem;margin-top:1rem;flex-wrap:wrap}
+.stat{text-align:center}
+.stat-val{font-family:'Source Serif 4',serif;font-size:1.5rem;font-weight:700}
+.stat-lbl{font-size:0.7rem;opacity:0.7;text-transform:uppercase;letter-spacing:0.05em}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>🐋 BVI Cetacean Research</h1>
+  <p>Interactive maps and data visualizations from three years of cetacean surveys in the British Virgin Islands</p>
+  <div class="stats">
+    <div class="stat"><div class="stat-val">62</div><div class="stat-lbl">Survey Days</div></div>
+    <div class="stat"><div class="stat-val">169</div><div class="stat-lbl">Sightings</div></div>
+    <div class="stat"><div class="stat-val">9</div><div class="stat-lbl">Species</div></div>
+    <div class="stat"><div class="stat-val">27</div><div class="stat-lbl">Matched Whales</div></div>
+  </div>
+</div>
+
+<div class="container">
+
+  <div class="section-label">Interactive Maps</div>
+
+  <a class="card" href="A_Spatial_Ocean.html">
+    <div class="card-label">A. Spatial Distribution</div>
+    <h2>Cetacean Sightings &amp; Survey Effort</h2>
+    <p>All 169 sightings across 9 species on ocean bathymetry basemap. Filter by year and species. Toggle effort track, heatmap, and effort-corrected hotspot grid.</p>
+    <span class="badge badge-interactive">Interactive</span>
+    <span class="badge badge-ocean">Ocean Basemap</span>
+  </a>
+
+  <a class="card" href="A_Hotspots_Ocean.html">
+    <div class="card-label">A. Hotspot Analysis</div>
+    <h2>Humpback Hotspots — Raw vs. Effort-Corrected</h2>
+    <p>Synced side-by-side comparison of raw sighting counts and effort-corrected encounter rates per 0.05° grid cell. Maps pan and zoom together.</p>
+    <span class="badge badge-interactive">Interactive</span>
+    <span class="badge badge-ocean">Ocean Basemap</span>
+  </a>
+
+  <a class="card" href="BVI_Cetacean_Dashboard.html">
+    <div class="card-label">Full Dashboard</div>
+    <h2>Complete Research Dashboard</h2>
+    <p>All five research questions (Spatial, Seasonality, Behavior, Human Overlap, Movement Patterns) with charts, maps, filters, and the full migration network.</p>
+    <span class="badge badge-interactive">Interactive</span>
+  </a>
+
+  <div class="section-label">About</div>
+
+  <div class="card" style="cursor:default;transform:none">
+    <h2>Beyond The Reef — BVI Cetacean Research Program</h2>
+    <p>Survey period: January 2023 – October 2025. Data collected via ObserveMer survey platform. Photo-identification through Happy Whale. 
+    62 expedition days across the British Virgin Islands, with primary focus on humpback whale breeding season (January–May) 
+    around Anegada and the surrounding shelf waters.</p>
+    <p style="margin-top:0.5rem"><strong>Key findings:</strong> Consistent hotspot near Anegada across all years. 27 whales matched to feeding grounds in Iceland, Norway, Canada, Greenland, and other Caribbean breeding areas. Peak vessel–cetacean overlap in March coinciding with calving season.</p>
+  </div>
+
+</div>
+
+<div class="footer">
+  Beyond The Reef · BVI Cetacean Research · Data: ObserveMer & Happy Whale · 2023–2025
+</div>
+
+</body>
+</html>
