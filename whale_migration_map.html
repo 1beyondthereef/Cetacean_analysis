@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BVI Humpback Whale Migration Tracks</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        body { margin: 0; padding: 0; font-family: 'Georgia', serif; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+        .title-box {
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; background: rgba(255,255,255,0.93); padding: 10px 25px;
+            border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            text-align: center; pointer-events: none;
+        }
+        .title-box h1 { margin: 0; font-size: 18px; color: #1B4F72; }
+        .title-box p { margin: 3px 0 0 0; font-size: 12px; color: #555; }
+        .legend-box {
+            position: absolute; bottom: 25px; left: 15px; z-index: 1000;
+            background: rgba(255,255,255,0.93); padding: 12px 16px;
+            border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            font-size: 12px; max-height: 60vh; overflow-y: auto;
+        }
+        .legend-box h3 { margin: 0 0 8px 0; font-size: 14px; color: #1B4F72; }
+        .whale-item {
+            display: flex; align-items: center; padding: 3px 0; cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .whale-item:hover { opacity: 0.7; }
+        .whale-item .color-line {
+            width: 25px; height: 3px; margin-right: 8px; border-radius: 2px;
+        }
+        .whale-item .label { font-size: 11px; color: #333; }
+        .whale-item .detail { font-size: 10px; color: #888; margin-left: 4px; }
+        .region-label {
+            background: none !important; border: none !important; box-shadow: none !important;
+            font-family: Georgia, serif; font-size: 12px; font-weight: bold;
+            color: #1B4F72; text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+        }
+        .region-label-breeding {
+            background: none !important; border: none !important; box-shadow: none !important;
+            font-family: Georgia, serif; font-size: 11px; font-weight: bold;
+            color: #C0392B; text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+        }
+        .bvi-label {
+            background: none !important; border: none !important; box-shadow: none !important;
+            font-family: Georgia, serif; font-size: 14px; font-weight: bold;
+            color: #E74C3C; text-shadow: 2px 2px 3px white, -2px -2px 3px white;
+        }
+        .info-popup { font-family: Georgia, serif; font-size: 12px; }
+        .info-popup b { color: #1B4F72; }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="title-box">
+        <h1>Individual Migration Paths — 27 BVI Humpback Whales</h1>
+        <p>Photo-ID matched via Happy Whale · Each line = one whale's sighting history · Click lines for details</p>
+    </div>
+    <div class="legend-box" id="legend">
+        <h3>Whale Tracks (click to toggle)</h3>
+        <div id="whale-list"></div>
+    </div>
+
+    <script>
+    // Initialize map centered on mid-Atlantic
+    var map = L.map('map', {
+        center: [42, -30],
+        zoom: 3,
+        minZoom: 2,
+        maxZoom: 10
+    });
+
+    // Ocean basemap
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Sources: GEBCO, NOAA, National Geographic',
+        maxZoom: 13
+    }).addTo(map);
+
+    // Optional: add ocean reference layer (labels)
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 13,
+        opacity: 0.5
+    }).addTo(map);
+
+    // BVI marker
+    var bviMarker = L.circleMarker([18.7, -64.3], {
+        radius: 10, fillColor: '#E74C3C', color: 'white', weight: 3, fillOpacity: 1
+    }).addTo(map);
+    bviMarker.bindPopup('<div class="info-popup"><b>British Virgin Islands</b><br>Focal study site<br>Beyond The Reef surveys 2023–2025</div>');
+
+    L.marker([18.7, -64.3], {
+        icon: L.divIcon({ className: 'bvi-label', html: '★ BVI', iconSize: [60, 20], iconAnchor: [-12, 10] })
+    }).addTo(map);
+
+    // Region labels
+    var feedingRegions = [
+        { name: 'Iceland', lat: 65.5, lon: -19 },
+        { name: 'Norway', lat: 70.5, lon: 18 },
+        { name: 'Svalbard', lat: 78.5, lon: 18 },
+        { name: 'Greenland', lat: 65, lon: -42 },
+        { name: 'Canada', lat: 49, lon: -54 },
+        { name: 'Azores', lat: 39.5, lon: -28.5 },
+        { name: 'Madeira', lat: 33.5, lon: -17.5 }
+    ];
+    var breedingRegions = [
+        { name: 'Guadeloupe', lat: 16.5, lon: -61 },
+        { name: 'Dominican Rep.', lat: 19.5, lon: -70 },
+        { name: 'Puerto Rico', lat: 17.5, lon: -67 }
+    ];
+
+    feedingRegions.forEach(function(r) {
+        L.marker([r.lat, r.lon], {
+            icon: L.divIcon({ className: 'region-label', html: r.name, iconSize: [100, 20], iconAnchor: [50, 10] })
+        }).addTo(map);
+    });
+    breedingRegions.forEach(function(r) {
+        L.marker([r.lat, r.lon], {
+            icon: L.divIcon({ className: 'region-label-breeding', html: r.name, iconSize: [100, 20], iconAnchor: [50, 10] })
+        }).addTo(map);
+    });
+
+    // Whale track data
+    var whaleTracks = [
+        {id:"HRC-MN1059", color:"#e6194B", path:[[66.0,-15.5],[18.70,-64.30]], sightings:[{lat:66.0,lon:-15.5,loc:"Northeast, Iceland",date:"2018-06-23"},{lat:66.0,lon:-15.5,loc:"Northeast, Iceland",date:"2021-07-19"},{lat:66.0,lon:-15.5,loc:"Northeast, Iceland",date:"2021-07-21"},{lat:18.70,lon:-64.30,loc:"BVI (South Anegada)",date:"2024-02-03"}], regions:"Iceland → BVI"},
+        {id:"HRC-MN975", color:"#3cb44b", path:[[64.2,-22.0],[66.0,-15.5],[64.2,-44.0],[18.78,-64.30]], sightings:[{lat:64.2,lon:-22.0,loc:"Capital Region, Iceland",date:"2019-04-17"},{lat:66.0,lon:-15.5,loc:"NE Iceland (×9)",date:"2019–2021"},{lat:64.2,lon:-44.0,loc:"Greenland",date:"2022-08-19"},{lat:18.78,lon:-64.30,loc:"BVI (North Anegada)",date:"2024-01-31"}], regions:"Iceland → Greenland → BVI"},
+        {id:"HRC-Mn395", color:"#ffe119", path:[[66.0,-15.5],[18.7,-64.3],[16.2,-61.5]], sightings:[{lat:66.0,lon:-15.5,loc:"NE Iceland (×7)",date:"2014–2021"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2024-02-21"},{lat:16.2,lon:-61.5,loc:"Guadeloupe",date:"2025-03-22"}], regions:"Iceland → BVI → Guadeloupe"},
+        {id:"HRC-MN317", color:"#ff9933", path:[[66.0,-15.5],[18.72,-64.20]], sightings:[{lat:66.0,lon:-15.5,loc:"NE Iceland (×3)",date:"2013–2021"},{lat:18.72,lon:-64.20,loc:"BVI (Herman's Reef)",date:"2024-02-03"}], regions:"Iceland → BVI"},
+        {id:"HW-MN0100868", color:"#4363d8", path:[[48.5,-53.0],[18.7,-64.3]], sightings:[{lat:48.5,lon:-53.0,loc:"Newfoundland, Canada",date:"2023-08-15"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2025-03-20"}], regions:"Canada → BVI"},
+        {id:"HW-MN0101577", color:"#f58231", path:[[63.8,-22.0],[65.8,-22.5],[18.7,-64.3],[64.2,-22.0],[65.0,-22.5]], sightings:[{lat:63.8,lon:-22.0,loc:"S. Peninsula, Iceland",date:"2018-06-10"},{lat:65.8,lon:-22.5,loc:"Westfjords",date:"2019-07-02"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2024-04-04"},{lat:64.2,lon:-22.0,loc:"Capital Region",date:"2024-06-10"},{lat:65.0,lon:-22.5,loc:"W. Iceland",date:"2024-07-05"}], regions:"Iceland (multi-site) ↔ BVI"},
+        {id:"HW-MN0102662", color:"#911eb4", path:[[69.6,19.0],[18.7,-64.3],[69.6,19.0]], sightings:[{lat:69.6,lon:19.0,loc:"Troms, Norway (×10)",date:"2017–2023"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2024-02-21"},{lat:69.6,lon:19.0,loc:"Troms, Norway",date:"2024-07-04"}], regions:"Norway ↔ BVI ↔ Norway"},
+        {id:"HW-MN0102817", color:"#42d4f4", path:[[65.8,-22.5],[18.7,-64.3],[65.8,-22.5],[66.0,-15.5],[65.8,-22.5]], sightings:[{lat:65.8,lon:-22.5,loc:"Westfjords (×7)",date:"2018–2023"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2024-02-17"},{lat:65.8,lon:-22.5,loc:"Westfjords (×2)",date:"2024-06"},{lat:66.0,lon:-15.5,loc:"NE Iceland",date:"2024-07"},{lat:65.8,lon:-22.5,loc:"Westfjords",date:"2024-08"}], regions:"Iceland ↔ BVI ↔ Iceland"},
+        {id:"HW-MN0103051", color:"#f032e6", path:[[49.5,-62.0],[18.45,-64.38]], sightings:[{lat:49.5,lon:-62.0,loc:"Quebec, Canada (×3)",date:"2019–2022"},{lat:18.45,lon:-64.38,loc:"BVI (S. Virgin Gorda)",date:"2025-03-22"}], regions:"Canada → BVI"},
+        {id:"HW-MN0103675", color:"#bfef45", path:[[18.7,-64.3],[19.2,-69.3]], sightings:[{lat:18.7,lon:-64.3,loc:"BVI",date:"2024-02-14"},{lat:19.2,lon:-69.3,loc:"Samaná, Dominican Rep.",date:"2025-02-19"}], regions:"BVI → Dominican Rep."},
+        {id:"HW-MN0103727", color:"#fabed4", path:[[63.8,-22.0],[18.7,-64.3]], sightings:[{lat:63.8,lon:-22.0,loc:"S. Peninsula, Iceland",date:"2019-06-07"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2025-03-03"}], regions:"Iceland → BVI"},
+        {id:"HW-MN0103933", color:"#469990", path:[[18.7,-64.3],[69.6,19.0]], sightings:[{lat:18.7,lon:-64.3,loc:"BVI",date:"2024-02-03"},{lat:69.6,lon:19.0,loc:"Troms, Norway (×2)",date:"2024-07"}], regions:"BVI → Norway"},
+        {id:"HW-MN0103962", color:"#dcbeff", path:[[64.2,-44.0],[18.7,-64.3]], sightings:[{lat:64.2,lon:-44.0,loc:"Greenland",date:"2023-08-10"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2025-03-16"}], regions:"Greenland → BVI"},
+        {id:"HW-MN0104172", color:"#9A6324", path:[[64.2,-44.0],[18.7,-64.3]], sightings:[{lat:64.2,lon:-44.0,loc:"Greenland",date:"2022-08-07"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2025-03-15"}], regions:"Greenland → BVI"},
+        {id:"HW-MN0200011", color:"#800000", path:[[38.7,-28.0],[18.7,-64.3]], sightings:[{lat:38.7,lon:-28.0,loc:"Azores (×3)",date:"2021–2024"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2025-02-22"}], regions:"Azores → BVI"},
+        {id:"HW-MN0200052", color:"#aaffc3", path:[[67.3,14.5],[18.7,-64.3],[69.6,19.0]], sightings:[{lat:67.3,lon:14.5,loc:"Nordland, Norway",date:"2023-11-08"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2024-02-21"},{lat:69.6,lon:19.0,loc:"Troms, Norway (×2)",date:"2024-07"}], regions:"Norway → BVI → Norway"},
+        {id:"MARE-OOM_Mn013", color:"#808000", path:[[32.8,-17.0],[18.7,-64.3]], sightings:[{lat:32.8,lon:-17.0,loc:"Madeira",date:"2024-04-04"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2026-01-13"}], regions:"Madeira → BVI"},
+        {id:"NA-10898", color:"#ffd8b1", path:[[48.5,-53.0],[18.7,-64.3]], sightings:[{lat:48.5,lon:-53.0,loc:"Newfoundland",date:"2024-08-08"},{lat:18.7,lon:-64.3,loc:"BVI (×2)",date:"2025-02–03"}], regions:"Canada → BVI"},
+        {id:"NA-1159", color:"#000075", path:[[48.5,-53.0],[18.7,-64.3]], sightings:[{lat:48.5,lon:-53.0,loc:"Newfoundland",date:"1978-07-01"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2025-03-20"}], regions:"Canada → BVI (47-yr span!)"},
+        {id:"NA-2956", color:"#aa6e28", path:[[66.0,-15.5],[18.7,-64.3]], sightings:[{lat:66.0,lon:-15.5,loc:"NE Iceland",date:"2018-06-27"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2025-03-15"}], regions:"Iceland → BVI"},
+        {id:"NA-6917", color:"#808080", path:[[16.2,-61.5],[18.7,-64.3],[16.2,-61.5]], sightings:[{lat:16.2,lon:-61.5,loc:"Guadeloupe",date:"2009-04-13"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2023-04-22"},{lat:16.2,lon:-61.5,loc:"Guadeloupe",date:"2024-04-21"}], regions:"Guadeloupe ↔ BVI ↔ Guadeloupe"},
+        {id:"NA-8630", color:"#e6beff", path:[[66.0,-15.5],[19.0,-70.0],[18.7,-64.3]], sightings:[{lat:66.0,lon:-15.5,loc:"NE Iceland",date:"2018-07-06"},{lat:19.0,lon:-70.0,loc:"Dominican Rep.",date:"2024-02-18"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2025-03-10"}], regions:"Iceland → Dominican Rep. → BVI"},
+        {id:"NA-9552", color:"#00CED1", path:[[18.3,-67.3],[66.0,-15.5],[18.72,-64.20]], sightings:[{lat:18.3,lon:-67.3,loc:"Rincon, Puerto Rico",date:"2014-03-15"},{lat:66.0,lon:-15.5,loc:"NE Iceland (×3)",date:"2018–2021"},{lat:18.72,lon:-64.20,loc:"BVI",date:"2025-02–03"}], regions:"Puerto Rico → Iceland → BVI"},
+        {id:"NA-9553", color:"#FF6347", path:[[18.2,-67.1],[18.78,-64.25]], sightings:[{lat:18.2,lon:-67.1,loc:"Mayagüez, Puerto Rico",date:"2014-02-07"},{lat:18.78,lon:-64.25,loc:"BVI (N. Anegada)",date:"2025-02-22"}], regions:"Puerto Rico → BVI"},
+        {id:"NA-9985", color:"#7B68EE", path:[[48.5,-53.0],[18.7,-64.3]], sightings:[{lat:48.5,lon:-53.0,loc:"Newfoundland",date:"2023-08-03"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2025-03-20"}], regions:"Canada → BVI"},
+        {id:"OMMAG-Mn_699", color:"#FF1493", path:[[78.0,16.0],[16.2,-61.5],[18.7,-64.3]], sightings:[{lat:78.0,lon:16.0,loc:"Svalbard",date:"2018-06-28"},{lat:16.2,lon:-61.5,loc:"Guadeloupe",date:"2021-03-20"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2025-03-22"}], regions:"Svalbard → Guadeloupe → BVI"},
+        {id:"OMMAG-Mn_702", color:"#20B2AA", path:[[69.6,19.0],[16.2,-61.5],[18.7,-64.3]], sightings:[{lat:69.6,lon:19.0,loc:"Troms, Norway (×2)",date:"2017–2018"},{lat:16.2,lon:-61.5,loc:"Guadeloupe (×3)",date:"2019–2025"},{lat:18.7,lon:-64.3,loc:"BVI",date:"2025-03-22"}], regions:"Norway → Guadeloupe → BVI"}
+    ];
+
+    // Draw tracks
+    var trackLayers = {};
+
+    whaleTracks.forEach(function(whale) {
+        var layerGroup = L.layerGroup();
+
+        // Draw path line
+        var pathCoords = whale.path.map(function(p) { return [p[0], p[1]]; });
+        var polyline = L.polyline(pathCoords, {
+            color: whale.color, weight: 2.5, opacity: 0.7,
+            dashArray: null, smoothFactor: 1.5
+        });
+        
+        var popupContent = '<div class="info-popup"><b>' + whale.id + '</b><br>' +
+            '<i>' + whale.regions + '</i><br><br>';
+        whale.sightings.forEach(function(s) {
+            popupContent += '📍 ' + s.loc + ' (' + s.date + ')<br>';
+        });
+        popupContent += '</div>';
+        polyline.bindPopup(popupContent);
+        polyline.addTo(layerGroup);
+
+        // Draw sighting dots
+        whale.sightings.forEach(function(s) {
+            var isBVI = s.loc.indexOf('BVI') >= 0;
+            var marker = L.circleMarker([s.lat, s.lon], {
+                radius: isBVI ? 5 : 4,
+                fillColor: isBVI ? '#E74C3C' : whale.color,
+                color: 'white', weight: 1.5,
+                fillOpacity: 0.9
+            });
+            marker.bindPopup('<div class="info-popup"><b>' + whale.id + '</b><br>' + s.loc + '<br>' + s.date + '</div>');
+            marker.addTo(layerGroup);
+        });
+
+        layerGroup.addTo(map);
+        trackLayers[whale.id] = { layer: layerGroup, visible: true, color: whale.color };
+    });
+
+    // Build legend
+    var listDiv = document.getElementById('whale-list');
+    whaleTracks.forEach(function(whale) {
+        var item = document.createElement('div');
+        item.className = 'whale-item';
+        item.innerHTML = '<div class="color-line" style="background:' + whale.color + '"></div>' +
+            '<span class="label">' + whale.id + '</span>' +
+            '<span class="detail">' + whale.regions + '</span>';
+        item.onclick = function() {
+            var track = trackLayers[whale.id];
+            if (track.visible) {
+                map.removeLayer(track.layer);
+                item.style.opacity = '0.3';
+            } else {
+                track.layer.addTo(map);
+                item.style.opacity = '1';
+            }
+            track.visible = !track.visible;
+        };
+        listDiv.appendChild(item);
+    });
+    </script>
+</body>
+</html>
